@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RECEPCIONISTA
+  MEDICO
+  GERENCIA
+}
+
+enum AppointmentStatus {
+  PROGRAMADA
+  COMPLETADA
+  CANCELADA
+}
+
+enum Gender {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
+enum TargetGender {
+  TODOS
+  MASCULINO
+  FEMENINO
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  role      Role
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  doctor    Doctor?
+
+  @@map("users")
+}
+
+model Specialty {
+  id            Int          @id @default(autoincrement())
+  name          String       @unique @db.VarChar(100)
+  allowedGender TargetGender @default(TODOS) @map("allowed_gender")
+  minAge        Int?         @map("min_age")
+  maxAge        Int?         @map("max_age")
+  isActive      Boolean      @default(true) @map("is_active")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  doctors       Doctor[]
+
+  @@map("specialties")
+}
+
+model Doctor {
+  id          Int      @id @default(autoincrement())
+  firstName   String   @map("first_name") @db.VarChar(100)
+  lastName    String   @map("last_name") @db.VarChar(100)
+  specialtyId Int      @map("specialty_id")
+  userId      Int?     @unique @map("user_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  specialty    Specialty     @relation(fields: [specialtyId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+
+  @@map("doctors")
+}
+
+model Patient {
+  id        Int      @id @default(autoincrement())
+  firstName String   @map("first_name") @db.VarChar(100)
+  lastName  String   @map("last_name") @db.VarChar(100)
+  email     String   @unique @db.VarChar(150)
+  phone     String   @db.VarChar(20)
+  gender    Gender
+  birthDate DateTime @map("birth_date") @db.Date
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appointments Appointment[]
+
+  @@map("patients")
+}
+
+model Appointment {
+  id          Int               @id @default(autoincrement())
+  patientId   Int               @map("patient_id")
+  doctorId    Int               @map("doctor_id")
+  scheduledAt DateTime          @map("scheduled_at")
+  reason      String?           @db.Text
+  status      AppointmentStatus @default(PROGRAMADA)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  patient     Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor      Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
