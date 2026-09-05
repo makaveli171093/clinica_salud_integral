@@ -17,12 +17,6 @@ import {
 const router: Router = Router();
 router.use(verifyToken);
 
-router.post(
-  "/",
-  authorize("GERENCIA"),
-  validateCreateDoctor,
-  handleCreateDoctor,
-);
 router.get(
   "/",
   authorize("RECEPCIONISTA", "MEDICO", "GERENCIA"),
@@ -37,6 +31,12 @@ router.get(
   "/:id/appointments",
   authorize("MEDICO", "GERENCIA"),
   handleGetDoctorAgenda,
+);
+router.post(
+  "/",
+  authorize("GERENCIA"),
+  validateCreateDoctor,
+  handleCreateDoctor,
 );
 router.put(
   "/:id",

@@ -18,16 +18,16 @@ const router: Router = Router();
 
 router.use(verifyToken);
 
+router.get(
+  "/:id",
+  authorize("RECEPCIONISTA", "MEDICO", "GERENCIA"),
+  handleGetAppointmentById,
+);
 router.post(
   "/",
   authorize("RECEPCIONISTA"),
   validateAppointment,
   handleCreateAppointment,
-);
-router.get(
-  "/:id",
-  authorize("RECEPCIONISTA", "MEDICO", "GERENCIA"),
-  handleGetAppointmentById,
 );
 router.put(
   "/:id",

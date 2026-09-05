@@ -11,20 +11,19 @@ import { authorize } from "../middlewares/authorize.middleware.js";
 import { validatePatient } from "../middlewares/validate-patient.middleware.js";
 
 const router: Router = Router();
-
 router.use(verifyToken);
 
-router.post(
-  "/",
-  authorize("RECEPCIONISTA"),
-  validatePatient,
-  handleCreatePatient,
-);
 router.get("/", authorize("RECEPCIONISTA", "GERENCIA"), handleGetAllPatients);
 router.get(
   "/:id",
   authorize("RECEPCIONISTA", "MEDICO", "GERENCIA"),
   handleGetPatientById,
+);
+router.post(
+  "/",
+  authorize("RECEPCIONISTA"),
+  validatePatient,
+  handleCreatePatient,
 );
 router.put(
   "/:id",

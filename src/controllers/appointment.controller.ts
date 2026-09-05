@@ -24,6 +24,18 @@ export async function handleCreateAppointment(req: Request, res: Response) {
     const { patientId, doctorId, scheduledAt, reason } = req.body;
     const appointmentDate = new Date(scheduledAt);
 
+    const existingAppointment =
+      await AppointmentModel.findExistingDoctorAppointment(
+        doctorId,
+        appointmentDate,
+      );
+    if (existingAppointment) {
+      return res.status(409).json({
+        message:
+          "Conflicto de horario: El médico ya tiene una cita programada en la fecha y hora seleccionada.",
+      });
+    }
+
     const patient = await PatientModel.getPatientById(patientId, false);
     if (!patient) {
       return res
@@ -145,7 +157,7 @@ export async function handleUpdateAppointmentStatus(
         description: 'Nuevo estado de la cita',
         required: true,
         schema: {
-          status: 'COMPLETADA'
+          status: 'COMPLETADA o CANCELADA'
         }
       }
   */
@@ -194,12 +206,39 @@ export async function handleUpdateAppointment(req: Request, res: Response) {
   */
   try {
     const id = Number(req.params.id);
-    const updated = await AppointmentModel.updateAppointment(id, {
-      ...req.body,
-      scheduledAt: req.body.scheduledAt
-        ? new Date(req.body.scheduledAt)
-        : undefined,
-    });
+    const { scheduledAt, reason } = req.body;
+
+    const currentAppointment = await AppointmentModel.getAppointmentById(id);
+    if (!currentAppointment) {
+      return res.status(404).json({ message: "Cita no encontrada" });
+    }
+
+    let appointmentDate: Date | undefined;
+    const updateData: { scheduledAt?: Date; reason?: string } = {};
+    if (scheduledAt) {
+      appointmentDate = new Date(scheduledAt);
+
+      // Comprobar que no choque con otra cita del mismo doctor
+      const clash = await AppointmentModel.findExistingDoctorAppointment(
+        currentAppointment.doctorId,
+        appointmentDate,
+        id, // excluimos la cita actual
+      );
+
+      if (clash) {
+        return res.status(409).json({
+          message:
+            "Conflicto de horario: El médico ya tiene otra cita en la fecha y hora seleccionada.",
+        });
+      }
+      updateData.scheduledAt = appointmentDate;
+    }
+
+    if (reason !== undefined) {
+      updateData.reason = reason;
+    }
+
+    const updated = await AppointmentModel.updateAppointment(id, updateData);
     res.json(updated);
   } catch (error: any) {
     if (error.code === "P2025")

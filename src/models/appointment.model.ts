@@ -1,5 +1,20 @@
 import prisma from "../config/prisma.js";
 
+export function findExistingDoctorAppointment(
+  doctorId: number,
+  scheduledAt: Date,
+  excludeId?: number,
+) {
+  return prisma.appointment.findFirst({
+    where: {
+      doctorId,
+      scheduledAt,
+      status: { not: "CANCELADA" }, // Las citas canceladas liberan el cupo
+      ...(excludeId ? { id: { not: excludeId } } : {}), // Para no chocar consigo misma en un PUT
+    },
+  });
+}
+
 export function createAppointment(data: {
   patientId: number;
   doctorId: number;

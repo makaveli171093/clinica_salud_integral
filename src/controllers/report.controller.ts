@@ -39,13 +39,16 @@ export async function handleGetDailyCutoff(req: Request, res: Response) {
     }
 
     const counts = await ReportModel.getDailyCutoff(date);
+    type DailyCutoffItem = Awaited<
+      ReturnType<typeof ReportModel.getDailyCutoff>
+    >[number];
     const summary = {
       date,
       completadas: 0,
       canceladas: 0,
     };
 
-    counts.forEach((entry) => {
+    counts.forEach((entry: DailyCutoffItem) => {
       if (entry.status === "COMPLETADA")
         summary.completadas = entry._count.status;
       if (entry.status === "CANCELADA")
