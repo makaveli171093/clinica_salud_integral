@@ -2,7 +2,9 @@ import prisma from "../src/config/prisma.js";
 import bcrypt from "bcryptjs";
 
 async function main() {
-  console.log("Limpiando base de datos previa...");
+  console.log("Limpiando tablas anteriores...");
+  await prisma.medicalConsultation.deleteMany();
+  await prisma.medicalRecord.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.doctor.deleteMany();
   await prisma.specialty.deleteMany();
@@ -12,7 +14,7 @@ async function main() {
   const passwordHash = await bcrypt.hash("Clinica123!", 10);
 
   // ==========================================
-  // 1. ESPECIALIDADES (8)
+  // 1. ESPECIALIDADES MÉDICAS (8)
   // ==========================================
   console.log("Insertando especialidades...");
   const cardio = await prisma.specialty.create({
@@ -81,9 +83,9 @@ async function main() {
   });
 
   // ==========================================
-  // 2. USUARIOS ADMINISTRATIVOS (4)
+  // 2. USUARIOS ADMINISTRATIVOS (5)
   // ==========================================
-  console.log("Insertando personal administrativo...");
+  console.log("Insertando usuarios administrativos...");
   await prisma.user.create({
     data: {
       email: "gerencia@clinica.com",
@@ -109,14 +111,19 @@ async function main() {
         password: passwordHash,
         role: "RECEPCIONISTA",
       },
+      {
+        email: "recepcion4@clinica.com",
+        password: passwordHash,
+        role: "RECEPCIONISTA",
+      },
     ],
   });
 
   // ==========================================
-  // 3. MÉDICOS Y SUS USUARIOS VINCULADOS (18)
+  // 3. MÉDICOS Y CUENTAS VINCULADAS (20)
   // ==========================================
-  console.log("Insertando médicos y vinculando cuentas...");
-  const doctorsData = [
+  console.log("Insertando médicos y enlazando cuentas...");
+  const rawDoctors = [
     {
       firstName: "Roberto",
       lastName: "Pérez",
@@ -184,6 +191,12 @@ async function main() {
       specId: trauma.id,
     },
     {
+      firstName: "Marcos",
+      lastName: "Suárez",
+      email: "dr.suarez.m@clinica.com",
+      specId: trauma.id,
+    },
+    {
       firstName: "Claudia",
       lastName: "Herrera",
       email: "dra.herrera@clinica.com",
@@ -215,8 +228,8 @@ async function main() {
     },
     {
       firstName: "Hugo",
-      lastName: "Suárez",
-      email: "dr.suarez@clinica.com",
+      lastName: "Campero",
+      email: "dr.campero@clinica.com",
       specId: geriatria.id,
     },
     {
@@ -225,16 +238,21 @@ async function main() {
       email: "dra.cabrera@clinica.com",
       specId: geriatria.id,
     },
+    {
+      firstName: "Irene",
+      lastName: "Delgado",
+      email: "dra.delgado@clinica.com",
+      specId: geriatria.id,
+    },
   ];
 
   const doctorsList = [];
-
-  for (const doc of doctorsData) {
+  for (const doc of rawDoctors) {
     const user = await prisma.user.create({
       data: { email: doc.email, password: passwordHash, role: "MEDICO" },
     });
 
-    const createdDoctor = await prisma.doctor.create({
+    const doctor = await prisma.doctor.create({
       data: {
         firstName: doc.firstName,
         lastName: doc.lastName,
@@ -243,20 +261,20 @@ async function main() {
       },
     });
 
-    doctorsList.push(createdDoctor);
+    doctorsList.push(doctor);
   }
 
   // ==========================================
-  // 4. PACIENTES (30)
+  // 4. PACIENTES (40)
   // ==========================================
-  console.log("Insertando pacientes con perfiles de edad variados...");
+  console.log("Insertando pacientes...");
   const rawPatients = [
-    // Pediátricos (< 16 años)
+    // Pediátricos (< 16 años) [0 al 7]
     {
       firstName: "Mateo",
       lastName: "Vargas",
       email: "mateo.v@gmail.com",
-      phone: "70010001",
+      phone: "70100001",
       gender: "MASCULINO" as const,
       birthDate: new Date("2018-05-12"),
     },
@@ -264,7 +282,7 @@ async function main() {
       firstName: "Camila",
       lastName: "Rojas",
       email: "camila.r@gmail.com",
-      phone: "70010002",
+      phone: "70100002",
       gender: "FEMENINO" as const,
       birthDate: new Date("2020-03-22"),
     },
@@ -272,7 +290,7 @@ async function main() {
       firstName: "Lucas",
       lastName: "Mamani",
       email: "lucas.m@gmail.com",
-      phone: "70010003",
+      phone: "70100003",
       gender: "MASCULINO" as const,
       birthDate: new Date("2015-11-05"),
     },
@@ -280,7 +298,7 @@ async function main() {
       firstName: "Valery",
       lastName: "Gutierrez",
       email: "valery.g@gmail.com",
-      phone: "70010004",
+      phone: "70100004",
       gender: "FEMENINO" as const,
       birthDate: new Date("2014-07-19"),
     },
@@ -288,17 +306,41 @@ async function main() {
       firstName: "Emiliano",
       lastName: "Paz",
       email: "emiliano.p@gmail.com",
-      phone: "70010005",
+      phone: "70100005",
       gender: "MASCULINO" as const,
       birthDate: new Date("2022-01-30"),
     },
+    {
+      firstName: "Santiago",
+      lastName: "Arias",
+      email: "santiago.a@gmail.com",
+      phone: "70100006",
+      gender: "MASCULINO" as const,
+      birthDate: new Date("2019-09-14"),
+    },
+    {
+      firstName: "Mia",
+      lastName: "Fernández",
+      email: "mia.f@gmail.com",
+      phone: "70100007",
+      gender: "FEMENINO" as const,
+      birthDate: new Date("2016-12-03"),
+    },
+    {
+      firstName: "Joaquín",
+      lastName: "Cabrera",
+      email: "joaquin.c@gmail.com",
+      phone: "70100008",
+      gender: "MASCULINO" as const,
+      birthDate: new Date("2017-04-27"),
+    },
 
-    // Mujeres adultas (aptas para Ginecología, Cardio, Derma, etc.)
+    // Mujeres adultas [8 al 19]
     {
       firstName: "Lucía",
       lastName: "Morales",
       email: "lucia.m@gmail.com",
-      phone: "70020001",
+      phone: "70200001",
       gender: "FEMENINO" as const,
       birthDate: new Date("1995-04-12"),
     },
@@ -306,7 +348,7 @@ async function main() {
       firstName: "Gabriela",
       lastName: "Díaz",
       email: "gabriela.d@gmail.com",
-      phone: "70020002",
+      phone: "70200002",
       gender: "FEMENINO" as const,
       birthDate: new Date("1988-09-15"),
     },
@@ -314,7 +356,7 @@ async function main() {
       firstName: "Andrea",
       lastName: "Salas",
       email: "andrea.s@gmail.com",
-      phone: "70020003",
+      phone: "70200003",
       gender: "FEMENINO" as const,
       birthDate: new Date("1992-12-01"),
     },
@@ -322,7 +364,7 @@ async function main() {
       firstName: "Paola",
       lastName: "Nuñez",
       email: "paola.n@gmail.com",
-      phone: "70020004",
+      phone: "70200004",
       gender: "FEMENINO" as const,
       birthDate: new Date("2000-06-18"),
     },
@@ -330,7 +372,7 @@ async function main() {
       firstName: "Carla",
       lastName: "Ríos",
       email: "carla.r@gmail.com",
-      phone: "70020005",
+      phone: "70200005",
       gender: "FEMENINO" as const,
       birthDate: new Date("1985-02-14"),
     },
@@ -338,7 +380,7 @@ async function main() {
       firstName: "Ximena",
       lastName: "Chávez",
       email: "ximena.c@gmail.com",
-      phone: "70020006",
+      phone: "70200006",
       gender: "FEMENINO" as const,
       birthDate: new Date("1997-10-25"),
     },
@@ -346,7 +388,7 @@ async function main() {
       firstName: "Daniela",
       lastName: "Fuentes",
       email: "daniela.f@gmail.com",
-      phone: "70020007",
+      phone: "70200007",
       gender: "FEMENINO" as const,
       birthDate: new Date("1991-03-08"),
     },
@@ -354,17 +396,49 @@ async function main() {
       firstName: "Natalia",
       lastName: "Quispe",
       email: "natalia.q@gmail.com",
-      phone: "70020008",
+      phone: "70200008",
       gender: "FEMENINO" as const,
       birthDate: new Date("1989-08-11"),
     },
+    {
+      firstName: "Jessica",
+      lastName: "Villanueva",
+      email: "jessica.v@gmail.com",
+      phone: "70200009",
+      gender: "FEMENINO" as const,
+      birthDate: new Date("1993-01-29"),
+    },
+    {
+      firstName: "Lorena",
+      lastName: "Montenegro",
+      email: "lorena.m@gmail.com",
+      phone: "70200010",
+      gender: "FEMENINO" as const,
+      birthDate: new Date("1986-11-17"),
+    },
+    {
+      firstName: "Rocío",
+      lastName: "Vallejos",
+      email: "rocio.v@gmail.com",
+      phone: "70200011",
+      gender: "FEMENINO" as const,
+      birthDate: new Date("1999-05-21"),
+    },
+    {
+      firstName: "Fabiola",
+      lastName: "Pérez",
+      email: "fabiola.p@gmail.com",
+      phone: "70200012",
+      gender: "FEMENINO" as const,
+      birthDate: new Date("1994-08-04"),
+    },
 
-    // Varones adultos (aptos para Urología, Cardio, Derma, etc.)
+    // Varones adultos [20 al 30]
     {
       firstName: "Carlos",
       lastName: "Mendoza",
       email: "carlos.m@gmail.com",
-      phone: "70030001",
+      phone: "70300001",
       gender: "MASCULINO" as const,
       birthDate: new Date("1982-01-20"),
     },
@@ -372,7 +446,7 @@ async function main() {
       firstName: "Jorge",
       lastName: "Navarro",
       email: "jorge.n@gmail.com",
-      phone: "70030002",
+      phone: "70300002",
       gender: "MASCULINO" as const,
       birthDate: new Date("1978-06-30"),
     },
@@ -380,7 +454,7 @@ async function main() {
       firstName: "Mauricio",
       lastName: "Soliz",
       email: "mauricio.s@gmail.com",
-      phone: "70030003",
+      phone: "70300003",
       gender: "MASCULINO" as const,
       birthDate: new Date("1993-07-14"),
     },
@@ -388,7 +462,7 @@ async function main() {
       firstName: "Alejandro",
       lastName: "Pardo",
       email: "alejandro.p@gmail.com",
-      phone: "70030004",
+      phone: "70300004",
       gender: "MASCULINO" as const,
       birthDate: new Date("1986-11-23"),
     },
@@ -396,7 +470,7 @@ async function main() {
       firstName: "Sergio",
       lastName: "Cruz",
       email: "sergio.c@gmail.com",
-      phone: "70030005",
+      phone: "70300005",
       gender: "MASCULINO" as const,
       birthDate: new Date("1990-04-05"),
     },
@@ -404,7 +478,7 @@ async function main() {
       firstName: "Diego",
       lastName: "Mercado",
       email: "diego.m@gmail.com",
-      phone: "70030006",
+      phone: "70300006",
       gender: "MASCULINO" as const,
       birthDate: new Date("1998-09-17"),
     },
@@ -412,7 +486,7 @@ async function main() {
       firstName: "Andrés",
       lastName: "Zárate",
       email: "andres.z@gmail.com",
-      phone: "70030007",
+      phone: "70300007",
       gender: "MASCULINO" as const,
       birthDate: new Date("1980-03-12"),
     },
@@ -420,17 +494,41 @@ async function main() {
       firstName: "Gabriel",
       lastName: "López",
       email: "gabriel.l@gmail.com",
-      phone: "70030008",
+      phone: "70300008",
       gender: "MASCULINO" as const,
       birthDate: new Date("1984-12-09"),
     },
+    {
+      firstName: "Hugo",
+      lastName: "Alarcón",
+      email: "hugo.a@gmail.com",
+      phone: "70300009",
+      gender: "MASCULINO" as const,
+      birthDate: new Date("1992-06-25"),
+    },
+    {
+      firstName: "Raúl",
+      lastName: "Cárdenas",
+      email: "raul.c@gmail.com",
+      phone: "70300010",
+      gender: "MASCULINO" as const,
+      birthDate: new Date("1987-10-10"),
+    },
+    {
+      firstName: "Mario",
+      lastName: "Espinosa",
+      email: "mario.e@gmail.com",
+      phone: "70300011",
+      gender: "MASCULINO" as const,
+      birthDate: new Date("1995-02-18"),
+    },
 
-    // Adultos Mayores (> 65 años, aptos para Geriatría y generales)
+    // Adultos mayores (> 65 años) [31 al 36]
     {
       firstName: "Armando",
       lastName: "Romero",
       email: "armando.r@gmail.com",
-      phone: "70040001",
+      phone: "70400001",
       gender: "MASCULINO" as const,
       birthDate: new Date("1950-02-15"),
     },
@@ -438,7 +536,7 @@ async function main() {
       firstName: "Teresa",
       lastName: "Cardozo",
       email: "teresa.c@gmail.com",
-      phone: "70040002",
+      phone: "70400002",
       gender: "FEMENINO" as const,
       birthDate: new Date("1955-08-20"),
     },
@@ -446,7 +544,7 @@ async function main() {
       firstName: "Guillermo",
       lastName: "Villalba",
       email: "guillermo.v@gmail.com",
-      phone: "70040003",
+      phone: "70400003",
       gender: "MASCULINO" as const,
       birthDate: new Date("1948-11-10"),
     },
@@ -454,7 +552,7 @@ async function main() {
       firstName: "Esperanza",
       lastName: "Mejía",
       email: "esperanza.m@gmail.com",
-      phone: "70040004",
+      phone: "70400004",
       gender: "FEMENINO" as const,
       birthDate: new Date("1952-04-03"),
     },
@@ -462,7 +560,7 @@ async function main() {
       firstName: "Vicente",
       lastName: "Bravo",
       email: "vicente.b@gmail.com",
-      phone: "70040005",
+      phone: "70400005",
       gender: "MASCULINO" as const,
       birthDate: new Date("1945-09-28"),
     },
@@ -470,17 +568,17 @@ async function main() {
       firstName: "Rosa",
       lastName: "Campos",
       email: "rosa.c@gmail.com",
-      phone: "70040006",
+      phone: "70400006",
       gender: "FEMENINO" as const,
       birthDate: new Date("1958-01-17"),
     },
 
-    // Pacientes género OTRO / Generales
+    // Pacientes género OTRO [37 al 39]
     {
       firstName: "Alex",
       lastName: "Montero",
       email: "alex.m@gmail.com",
-      phone: "70050001",
+      phone: "70500001",
       gender: "OTRO" as const,
       birthDate: new Date("1996-05-18"),
     },
@@ -488,7 +586,7 @@ async function main() {
       firstName: "René",
       lastName: "Silva",
       email: "rene.s@gmail.com",
-      phone: "70050002",
+      phone: "70500002",
       gender: "OTRO" as const,
       birthDate: new Date("1994-10-31"),
     },
@@ -496,7 +594,7 @@ async function main() {
       firstName: "Ariel",
       lastName: "Luna",
       email: "ariel.l@gmail.com",
-      phone: "70050003",
+      phone: "70500003",
       gender: "OTRO" as const,
       birthDate: new Date("1999-07-07"),
     },
@@ -509,165 +607,340 @@ async function main() {
   }
 
   // ==========================================
-  // 5. CITAS (PASADAS Y FUTURAS)
+  // 5. HISTORIAS CLÍNICAS (PORTADAS)
   // ==========================================
-  console.log("Insertando citas médicas respetando reglas clínicas...");
+  console.log("Creando portadas de historias clínicas para pacientes...");
+  const bloodTypes = ["O+", "A+", "B+", "AB+", "O-"];
 
-  // Referencias a médicos por especialidad
-  const docCardio1 = doctorsList[0]!;
-  const docPediatria1 = doctorsList[2]!;
-  const docGineco1 = doctorsList[5]!;
-  const docUrologia1 = doctorsList[7]!;
-  const docTrauma1 = doctorsList[9]!;
-  const docDerma1 = doctorsList[11]!;
-  const docOftalmo1 = doctorsList[13]!;
-  const docGeriatria1 = doctorsList[16]!;
+  for (let i = 0; i < patientsList.length; i++) {
+    const patient = patientsList[i]!;
+    await prisma.medicalRecord.create({
+      data: {
+        patientId: patient.id,
+        bloodType: bloodTypes[i % bloodTypes.length]!,
+        allergies:
+          i % 3 === 0
+            ? "Penicilina, Sulfas"
+            : i % 5 === 0
+              ? "Aspirina"
+              : "Ninguna reportada",
+        emergencyContact: `Familiar de ${patient.firstName}`,
+        emergencyPhone: `799${String(10000 + i)}`,
+        notes: `Historia clínica aperturada en admisión central. Paciente clasificado en sector ${i % 2 === 0 ? "A" : "B"}.`,
+      },
+    });
+  }
 
-  await prisma.appointment.createMany({
-    data: [
-      // ----------------------------------------------------
-      // Corte Operativo del 2026-07-16 (Fecha requerida por la guía)
-      // ----------------------------------------------------
-      {
-        patientId: patientsList[13]!.id, // Carlos Mendoza (Adulto)
-        doctorId: docCardio1.id,
-        scheduledAt: new Date("2026-07-16T09:00:00.000Z"),
-        reason: "Evaluación post-esfuerzo",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[5]!.id, // Lucía Morales (Mujer)
-        doctorId: docGineco1.id,
-        scheduledAt: new Date("2026-07-16T10:30:00.000Z"),
-        reason: "Chequeo ginecológico anual",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[0]!.id, // Mateo Vargas (Niño)
-        doctorId: docPediatria1.id,
-        scheduledAt: new Date("2026-07-16T14:00:00.000Z"),
-        reason: "Control de vacunas",
-        status: "CANCELADA",
-      },
-      {
-        patientId: patientsList[14]!.id, // Jorge Navarro (Varón)
-        doctorId: docUrologia1.id,
-        scheduledAt: new Date("2026-07-16T16:00:00.000Z"),
-        reason: "Consulta urológica preventiva",
-        status: "COMPLETADA",
-      },
+  // ==========================================
+  // 6. CITAS MÉDICAS
+  // ==========================================
+  console.log("Insertando citas pasadas y futuras sin solapamientos...");
 
-      // ----------------------------------------------------
-      // Otras citas pasadas (Historial clínico y reportes)
-      // ----------------------------------------------------
-      {
-        patientId: patientsList[1]!.id, // Camila (Niña)
-        doctorId: docPediatria1.id,
-        scheduledAt: new Date("2026-07-10T08:30:00.000Z"),
-        reason: "Fiebre persistente",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[2]!.id, // Lucas (Niño)
-        doctorId: docPediatria1.id,
-        scheduledAt: new Date("2026-07-12T11:00:00.000Z"),
-        reason: "Dolor estomacal",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[6]!.id, // Gabriela Díaz (Mujer)
-        doctorId: docGineco1.id,
-        scheduledAt: new Date("2026-07-14T09:30:00.000Z"),
-        reason: "Ecografía de rutina",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[7]!.id, // Andrea Salas (Mujer)
-        doctorId: docGineco1.id,
-        scheduledAt: new Date("2026-07-15T15:00:00.000Z"),
-        reason: "Consulta preconcepcional",
-        status: "CANCELADA",
-      },
-      {
-        patientId: patientsList[15]!.id, // Mauricio Soliz (Adulto)
-        doctorId: docTrauma1.id,
-        scheduledAt: new Date("2026-07-18T10:00:00.000Z"),
-        reason: "Esguince de tobillo derecho",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[8]!.id, // Paola Nuñez (Adulta)
-        doctorId: docDerma1.id,
-        scheduledAt: new Date("2026-07-20T11:30:00.000Z"),
-        reason: "Revisión de manchas solares",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[21]!.id, // Armando Romero (Adulto Mayor)
-        doctorId: docGeriatria1.id,
-        scheduledAt: new Date("2026-07-22T08:00:00.000Z"),
-        reason: "Control integral de la tercera edad",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[22]!.id, // Teresa Cardozo (Adulta Mayor)
-        doctorId: docGeriatria1.id,
-        scheduledAt: new Date("2026-07-25T10:00:00.000Z"),
-        reason: "Manejo de hipertensión crónica",
-        status: "COMPLETADA",
-      },
-      {
-        patientId: patientsList[27]!.id, // Alex Montero (Género Otro)
-        doctorId: docOftalmo1.id,
-        scheduledAt: new Date("2026-07-28T16:30:00.000Z"),
-        reason: "Examen de agudeza visual",
-        status: "COMPLETADA",
-      },
+  // Referencias a médicos por especialidad usando aserción no nula (!)
+  const dCardio1 = doctorsList[0]!;
+  const dCardio2 = doctorsList[1]!;
+  const dPediatria1 = doctorsList[2]!;
+  const dPediatria2 = doctorsList[3]!;
+  const dGineco1 = doctorsList[5]!;
+  const dGineco2 = doctorsList[6]!;
+  const dUrologia1 = doctorsList[7]!;
+  const dTrauma1 = doctorsList[9]!;
+  const dTrauma2 = doctorsList[10]!;
+  const dDerma1 = doctorsList[12]!;
+  const dOftalmo1 = doctorsList[14]!;
+  const dGeriatria1 = doctorsList[17]!;
+  const dGeriatria2 = doctorsList[18]!;
 
-      // ----------------------------------------------------
-      // Citas futuras (Estado PROGRAMADA para probar agendas)
-      // ----------------------------------------------------
-      {
-        patientId: patientsList[13]!.id, // Carlos Mendoza
-        doctorId: docCardio1.id,
-        scheduledAt: new Date("2026-10-10T09:00:00.000Z"),
-        reason: "Seguimiento cardiológico trimestral",
-        status: "PROGRAMADA",
-      },
-      {
-        patientId: patientsList[5]!.id, // Lucía Morales
-        doctorId: docGineco1.id,
-        scheduledAt: new Date("2026-10-10T11:00:00.000Z"),
-        reason: "Seguimiento ginecológico",
-        status: "PROGRAMADA",
-      },
-      {
-        patientId: patientsList[3]!.id, // Valery (Niña)
-        doctorId: docPediatria1.id,
-        scheduledAt: new Date("2026-10-11T15:00:00.000Z"),
-        reason: "Control de crecimiento y desarrollo",
-        status: "PROGRAMADA",
-      },
-      {
-        patientId: patientsList[16]!.id, // Alejandro Pardo
-        doctorId: docUrologia1.id,
-        scheduledAt: new Date("2026-10-12T10:00:00.000Z"),
-        reason: "Revisión anual",
-        status: "PROGRAMADA",
-      },
-    ],
-  });
+  const appointmentsToCreate = [
+    // --- CORTE DEL 2026-07-16 (Requerido en el brief) ---
+    {
+      patientId: patientsList[20]!.id, // Carlos Mendoza (Adulto)
+      doctorId: dCardio1.id,
+      scheduledAt: new Date("2026-07-16T08:30:00.000Z"),
+      reason: "Evaluación cardiovascular anual",
+      status: "COMPLETADA" as const,
+    },
+    {
+      patientId: patientsList[8]!.id, // Lucía Morales (Mujer)
+      doctorId: dGineco1.id,
+      scheduledAt: new Date("2026-07-16T10:00:00.000Z"),
+      reason: "Control prenatal",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[0]!.id, // Mateo Vargas (Niño)
+      doctorId: dPediatria1.id,
+      scheduledAt: new Date("2026-07-16T11:30:00.000Z"),
+      reason: "Control de peso y talla",
+      status: "CANCELADA" as const,
+    },
+    {
+      patientId: patientsList[21]!.id, // Jorge Navarro (Varón)
+      doctorId: dUrologia1.id,
+      scheduledAt: new Date("2026-07-16T14:30:00.000Z"),
+      reason: "Chequeo prostático preventivo",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[22]!.id, // Mauricio Soliz
+      doctorId: dTrauma1.id,
+      scheduledAt: new Date("2026-07-16T16:00:00.000Z"),
+      reason: "Dolor en rodilla derecha",
+      status: "COMPLETADA" as const,
+    },
 
-  console.log("------------------------------------------------------------");
-  console.log("Seed completado exitosamente:");
+    // --- OTRAS CITAS PASADAS (Historiales y reportes) ---
+    {
+      patientId: patientsList[1]!.id, // Camila (Niña)
+      doctorId: dPediatria1.id,
+      scheduledAt: new Date("2026-06-10T09:00:00.000Z"),
+      reason: "Fiebre persistente y tos seca",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[2]!.id, // Lucas (Niño)
+      doctorId: dPediatria2.id,
+      scheduledAt: new Date("2026-06-12T10:30:00.000Z"),
+      reason: "Gastroenteritis aguda",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[9]!.id, // Gabriela Díaz (Mujer)
+      doctorId: dGineco2.id,
+      scheduledAt: new Date("2026-06-15T09:00:00.000Z"),
+      reason: "Ecografía pélvica de rutina",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[10]!.id, // Andrea Salas (Mujer)
+      doctorId: dGineco1.id,
+      scheduledAt: new Date("2026-06-18T15:00:00.000Z"),
+      reason: "Consulta de planificación familiar",
+      status: "CANCELADA" as const,
+    },
+    {
+      patientId: patientsList[23]!.id, // Alejandro Pardo (Adulto)
+      doctorId: dCardio2.id,
+      scheduledAt: new Date("2026-06-20T08:00:00.000Z"),
+      reason: "Palpitaciones frecuentes",
+      status: "COMPLETADA" as const,
+    },
+    {
+      patientId: patientsList[24]!.id, // Sergio Cruz (Adulto)
+      doctorId: dTrauma2.id,
+      scheduledAt: new Date("2026-06-22T11:00:00.000Z"),
+      reason: "Esguince de muñeca por caída",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[11]!.id, // Paola Nuñez (Mujer)
+      doctorId: dDerma1.id,
+      scheduledAt: new Date("2026-06-25T16:00:00.000Z"),
+      reason: "Dermatitis por contacto",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[31]!.id, // Armando Romero (Adulto mayor)
+      doctorId: dGeriatria1.id,
+      scheduledAt: new Date("2026-06-28T09:30:00.000Z"),
+      reason: "Control geriátrico por artritis",
+      status: "ATENDIDO" as const,
+    },
+    {
+      patientId: patientsList[32]!.id, // Teresa Cardozo (Adulta mayor)
+      doctorId: dGeriatria2.id,
+      scheduledAt: new Date("2026-07-02T10:00:00.000Z"),
+      reason: "Revisión de polifarmacia",
+      status: "COMPLETADA" as const,
+    },
+    {
+      patientId: patientsList[37]!.id, // Alex Montero (Género Otro)
+      doctorId: dOftalmo1.id,
+      scheduledAt: new Date("2026-07-05T15:30:00.000Z"),
+      reason: "Disminución progresiva de agudeza visual",
+      status: "ATENDIDO" as const,
+    },
+
+    // --- CITAS FUTURAS (Estado PROGRAMADA) ---
+    {
+      patientId: patientsList[20]!.id, // Carlos Mendoza
+      doctorId: dCardio1.id,
+      scheduledAt: new Date("2026-10-10T09:00:00.000Z"),
+      reason: "Prueba de esfuerzo programada",
+      status: "PROGRAMADA" as const,
+    },
+    {
+      patientId: patientsList[8]!.id, // Lucía Morales
+      doctorId: dGineco1.id,
+      scheduledAt: new Date("2026-10-10T10:30:00.000Z"),
+      reason: "Control mensual de embarazo",
+      status: "PROGRAMADA" as const,
+    },
+    {
+      patientId: patientsList[3]!.id, // Valery (Niña)
+      doctorId: dPediatria1.id,
+      scheduledAt: new Date("2026-10-11T14:00:00.000Z"),
+      reason: "Control de asma estacional",
+      status: "PROGRAMADA" as const,
+    },
+    {
+      patientId: patientsList[25]!.id, // Diego Mercado (Adulto)
+      doctorId: dUrologia1.id,
+      scheduledAt: new Date("2026-10-12T08:30:00.000Z"),
+      reason: "Evaluación urológica de rutina",
+      status: "PROGRAMADA" as const,
+    },
+    {
+      patientId: patientsList[33]!.id, // Guillermo Villalba (Adulto mayor)
+      doctorId: dGeriatria1.id,
+      scheduledAt: new Date("2026-10-15T11:00:00.000Z"),
+      reason: "Monitoreo cognitivo semestral",
+      status: "PROGRAMADA" as const,
+    },
+  ];
+
+  const createdAppointments = [];
+  for (const app of appointmentsToCreate) {
+    const createdApp = await prisma.appointment.create({ data: app });
+    createdAppointments.push(createdApp);
+  }
+
+  // ==========================================
+  // 7. ATENCIONES MÉDICAS (DATOS SENSIBLES)
+  // ==========================================
+  console.log(
+    "Insertando atenciones médicas para las citas en estado ATENDIDO...",
+  );
+
+  // Obtenemos las historias clínicas para asociarlas a las atenciones
+  const medicalRecords = await prisma.medicalRecord.findMany();
+  const recordMap = new Map<number, number>();
+  for (const mr of medicalRecords) {
+    recordMap.set(mr.patientId, mr.id);
+  }
+
+  // Consultas sensibles detalladas
+  const consultationsData = [
+    {
+      appIndex: 1, // Cita de Lucía Morales con Dra. Ana Ríos (Gineco)
+      symptoms:
+        "Paciente en segundo trimestre de gestación refiere leves molestias lumbares y náuseas matutinas ocasionales.",
+      diagnosis:
+        "Embarazo normoevolutivo de 24 semanas sin signos de alarma obstétrica.",
+      studiesRequested: "Ecografía morfológica y analítica completa de orina.",
+      prescription:
+        "Hierro elemental 60mg/día, Ácido fólico 5mg/día, Paracetamol 500mg condicionado a dolor lumbar.",
+    },
+    {
+      appIndex: 3, // Cita de Jorge Navarro con Dr. Gonzalo Morales (Urología)
+      symptoms:
+        "Dificultad leve para iniciar la micción y nicturia en dos ocasiones por noche.",
+      diagnosis: "Hiperplasia prostática benigna grado I.",
+      studiesRequested:
+        "Antígeno Prostático Específico (PSA) total y libre, Ecografía vesicoprostática pre y postmiccional.",
+      prescription: "Tamsulosina 0.4mg una cápsula diaria por la noche.",
+    },
+    {
+      appIndex: 5, // Cita de Camila Rojas con Dr. Carlos Sánchez (Pediatría)
+      symptoms:
+        "Fiebre de 38.5°C de 48 horas de evolución, congestión nasal y tos seca nocturna.",
+      diagnosis: "Rinofaringitis aguda de probable etiología viral.",
+      studiesRequested:
+        "Hemograma completo si la fiebre persiste más de 72 horas.",
+      prescription:
+        "Paracetamol jarabe (120mg/5ml) 5ml cada 6 horas por fiebre, lavados nasales con solución fisiológica.",
+    },
+    {
+      appIndex: 6, // Cita de Lucas Mamani con Dra. Mariana Torres (Pediatría)
+      symptoms:
+        "Dolor abdominal tipo cólico difuso y tres deposiciones diarreicas sin sangre.",
+      diagnosis: "Gastroenteritis aguda sin deshidratación aparente.",
+      studiesRequested: "Coprocultivo y examen parasitológico seriado.",
+      prescription:
+        "Sales de rehidratación oral a libre demanda, Probióticos en sobres cada 12 horas por 5 días.",
+    },
+    {
+      appIndex: 7, // Cita de Gabriela Díaz con Dra. Patricia Vega (Gineco)
+      symptoms: "Acude para ecografía pélvica de rutina. Asintomática.",
+      diagnosis: "Aparato reproductor sin alteraciones ecográficas visibles.",
+      studiesRequested: "Papanicolaou para control anual.",
+      prescription: "Mantener hábitos higiénicos y control anual preventivo.",
+    },
+    {
+      appIndex: 10, // Cita de Sergio Cruz con Dra. Lucía Molina (Trauma)
+      symptoms:
+        "Edema moderado y dolor focalizado en cara externa de muñeca tras apoyo forzado.",
+      diagnosis: "Esguince de muñeca grado I.",
+      studiesRequested:
+        "Radiografía de muñeca frente y perfil para descartar fisura en escafoides.",
+      prescription:
+        "Ibuprofeno 400mg cada 8 horas con las comidas por 5 días, inmovilización con férula elástica por 7 días.",
+    },
+    {
+      appIndex: 11, // Cita de Paola Nuñez con Dra. Claudia Herrera (Dermatología)
+      symptoms:
+        "Lesiones eritematosas pruriginosas en ambas manos tras uso continuo de detergente.",
+      diagnosis: "Dermatitis por contacto irritativa.",
+      studiesRequested: "Ninguno por el momento.",
+      prescription:
+        "Betametasona crema 0.05% aplicar capa fina cada 12 horas por 7 días, emoliente humectante continuo.",
+    },
+    {
+      appIndex: 12, // Cita de Armando Romero con Dr. Hugo Campero (Geriatría)
+      symptoms:
+        "Rigidez matutina en manos y rodillas mayor a 30 minutos, dolor al deambular distancias medias.",
+      diagnosis:
+        "Gonartrosis bilateral y osteoartritis en articulaciones interfalángicas.",
+      studiesRequested:
+        "Proteína C Reactiva, Factor Reumatoide y Radiografía bilateral de rodillas en bipedestación.",
+      prescription:
+        "Celecoxib 200mg cada 24 horas por 10 días, derivación a Fisioterapia y Rehabilitación.",
+    },
+    {
+      appIndex: 14, // Cita de Alex Montero con Dr. Rodrigo Mendoza (Oftalmo)
+      symptoms:
+        "Visión borrosa lejana progresiva y cefalea frontal tras trabajo prolongado frente al computador.",
+      diagnosis: "Miopía simple leve (-1.25 D) y astenopía acomodativa.",
+      studiesRequested: "Campimetría visual y fondo de ojo.",
+      prescription:
+        "Prescripción de lentes correctores con filtro azul, Lágrimas artificiales 1 gota cada 4 horas.",
+    },
+  ];
+
+  for (const c of consultationsData) {
+    const appointment = createdAppointments[c.appIndex]!;
+    const medicalRecordId = recordMap.get(appointment.patientId);
+
+    if (medicalRecordId) {
+      await prisma.medicalConsultation.create({
+        data: {
+          medicalRecordId,
+          doctorId: appointment.doctorId,
+          appointmentId: appointment.id,
+          symptoms: c.symptoms,
+          diagnosis: c.diagnosis,
+          studiesRequested: c.studiesRequested,
+          prescription: c.prescription,
+          consultationDate: appointment.scheduledAt,
+        },
+      });
+    }
+  }
+
+  console.log("============================================================");
+  console.log("SEED EJECUTADO EXITOSAMENTE");
   console.log(" - 8 Especialidades configuradas.");
   console.log(
-    " - 22 Cuentas de usuario creadas (Contraseña general: Clinica123!)",
+    " - 25 Cuentas de usuario creadas (Contraseña unificada: Clinica123!)",
   );
-  console.log(" - 18 Médicos asociados a sus respectivas cuentas.");
-  console.log(" - 30 Pacientes creados.");
-  console.log(" - Citas sembradas para corte diario, reportes y agendas.");
-  console.log("------------------------------------------------------------");
+  console.log(" - 20 Médicos vinculados 1:1 a sus usuarios.");
+  console.log(" - 40 Pacientes registrados.");
+  console.log(" - 40 Historias clínicas con portadas administrativas.");
+  console.log(
+    " - 20 Citas programadas / completadas / atendidas / canceladas.",
+  );
+  console.log(" - 9 Atenciones médicas (consultas clínicas sensibles).");
+  console.log("============================================================");
 }
 
 main()

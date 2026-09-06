@@ -1,10 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
@@ -22,6 +18,7 @@ enum AppointmentStatus {
   PROGRAMADA
   COMPLETADA
   CANCELADA
+  ATENDIDO
 }
 
 enum Gender {
@@ -78,6 +75,7 @@ model Doctor {
   specialty    Specialty     @relation(fields: [specialtyId], references: [id])
   user         User?         @relation(fields: [userId], references: [id])
   appointments Appointment[]
+  medicalConsultations MedicalConsultation[]
 
   @@map("doctors")
 }
@@ -95,6 +93,7 @@ model Patient {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   appointments Appointment[]
+  medicalRecord MedicalRecord?
 
   @@map("patients")
 }
@@ -111,6 +110,44 @@ model Appointment {
 
   patient     Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctor      Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  medicalConsultation MedicalConsultation?
 
   @@map("appointments")
+}
+
+model MedicalRecord {
+  id              Int      @id @default(autoincrement())
+  patientId       Int      @unique @map("patient_id")
+  bloodType       String?  @map("blood_type") @db.VarChar(10)      // ej. O+, A+
+  allergies       String?  @db.Text                                // Alergias conocidas
+  emergencyContact String? @map("emergency_contact") @db.VarChar(150)
+  emergencyPhone  String?  @map("emergency_phone") @db.VarChar(20)
+  notes           String?  @db.Text                                // Notas administrativas de portada
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  patient         Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  consultations   MedicalConsultation[]
+
+  @@map("medical_records")
+}
+
+model MedicalConsultation {
+  id              Int      @id @default(autoincrement())
+  medicalRecordId Int      @map("medical_record_id")
+  doctorId        Int      @map("doctor_id")
+  appointmentId   Int?     @unique @map("appointment_id") // Opcional: si proviene de una cita
+  symptoms        String   @db.Text                       // Sintomatología
+  diagnosis       String   @db.Text                       // Diagnóstico
+  studiesRequested String? @map("studies_requested") @db.Text // Estudios solicitados / laboratorio
+  prescription    String?  @db.Text                       // Receta médica / indicaciones
+  consultationDate DateTime @default(now()) @map("consultation_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  doctor          Doctor        @relation(fields: [doctorId], references: [id])
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
+
+  @@map("medical_consultations")
 }
