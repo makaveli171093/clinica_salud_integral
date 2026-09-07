@@ -16,20 +16,7 @@ export const patientSchema = z.object({
     .max(new Date(), "La fecha de nacimiento no puede ser futura"),
 });
 
-export const updatePatientSchema = z.object({
-  firstName: z.string().min(1, "El nombre es obligatorio").optional(),
-  lastName: z.string().min(1, "El apellido es obligatorio").optional(),
-  email: z.string().email("El correo no tiene un formato válido").optional(),
-  phone: z
-    .string()
-    .min(6, "El teléfono debe tener al menos 6 caracteres")
-    .optional(),
-  gender: z.enum(["MASCULINO", "FEMENINO", "OTRO"]).optional(),
-  birthDate: z.coerce
-    .date()
-    .max(new Date(), "La fecha de nacimiento no puede ser futura")
-    .optional(),
-});
+export const updatePatientSchema = patientSchema.partial();
 
 export function validatePatient(
   req: Request,

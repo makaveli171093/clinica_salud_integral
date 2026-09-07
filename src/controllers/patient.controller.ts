@@ -86,7 +86,22 @@ export async function handleUpdatePatient(req: Request, res: Response) {
   */
   try {
     const id = Number(req.params.id);
-    const updated = await PatientModel.updatePatient(id, req.body);
+    const { firstName, lastName, email, phone, gender, birthDate } = req.body;
+
+    const dataToUpdate: Record<string, any> = {};
+    if (firstName !== undefined) dataToUpdate.firstName = firstName;
+    if (lastName !== undefined) dataToUpdate.lastName = lastName;
+    if (email !== undefined) dataToUpdate.email = email;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (gender !== undefined) dataToUpdate.gender = gender;
+    if (birthDate !== undefined) dataToUpdate.birthDate = new Date(birthDate);
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No se proporcionaron datos para actualizar" });
+    }
+    const updated = await PatientModel.updatePatient(id, dataToUpdate);
     res.json(updated);
   } catch (error: any) {
     if (error.code === "P2025")

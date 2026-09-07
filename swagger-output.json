@@ -82,7 +82,7 @@
               "properties": {
                 "email": {
                   "type": "string",
-                  "example": "recepcion@clinica.com"
+                  "example": "recepcion1@clinica.com"
                 },
                 "password": {
                   "type": "string",
@@ -1299,6 +1299,58 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/reports/booked-schedule": {
+      "get": {
+        "tags": [
+          "Reportes"
+        ],
+        "summary": "Horarios ocupados de citas por fecha y médico opcional",
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "Fecha requerida (YYYY-MM-DD)",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "doctorId",
+            "in": "query",
+            "description": "ID del médico para filtrar sus horarios (opcional)",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "500": {
             "description": "Internal Server Error"

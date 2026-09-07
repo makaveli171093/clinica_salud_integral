@@ -44,7 +44,7 @@ export async function login(req: Request, res: Response) {
         description: 'Credenciales de acceso',
         required: true,
         schema: {
-          email: 'recepcion@clinica.com',
+          email: 'recepcion1@clinica.com',
           password: 'Clinica123!'
         }
       }

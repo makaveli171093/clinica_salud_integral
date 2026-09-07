@@ -8,7 +8,10 @@ import {
 } from "../controllers/patient.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
-import { validatePatient } from "../middlewares/validate-patient.middleware.js";
+import {
+  validatePatient,
+  validateUpdatePatient,
+} from "../middlewares/validate-patient.middleware.js";
 
 const router: Router = Router();
 router.use(verifyToken);
@@ -28,7 +31,7 @@ router.post(
 router.put(
   "/:id",
   authorize("RECEPCIONISTA", "GERENCIA"),
-  validatePatient,
+  validateUpdatePatient,
   handleUpdatePatient,
 );
 router.delete("/:id", authorize("GERENCIA"), handleSoftDeletePatient);

@@ -21,8 +21,51 @@ export function getDailyCutoff(date: string) {
     by: ["status"],
     where: {
       scheduledAt: { gte: startOfDay, lte: endOfDay },
-      status: { in: ["COMPLETADA", "CANCELADA"] },
+      status: { in: ["COMPLETADA", "CANCELADA", "ATENDIDO"] },
     },
     _count: { status: true },
+  });
+}
+export async function getBookedSlotsByDate(date: string, doctorId?: number) {
+  const startDate = new Date(`${date}T00:00:00.000Z`);
+  const endDate = new Date(`${date}T23:59:59.999Z`);
+
+  return prisma.appointment.findMany({
+    where: {
+      scheduledAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+      // Excluimos CANCELADA para no bloquear horas que ya se liberaron
+      status: {
+        in: ["PROGRAMADA", "COMPLETADA", "ATENDIDO"],
+      },
+      ...(doctorId ? { doctorId } : {}),
+    },
+    select: {
+      id: true,
+      scheduledAt: true,
+      status: true,
+      doctor: {
+        select: {
+          firstName: true,
+          lastName: true,
+          specialty: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+    orderBy: {
+      scheduledAt: "asc",
+    },
   });
 }
