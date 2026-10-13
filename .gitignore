@@ -7,3 +7,12 @@ generated/
 .env.*
 !.env.example
 coverage/
+
+
+
+.agents/
+.claude/
+.cursor/
+.devin/
+.windsurf/
+skills-lock.json
