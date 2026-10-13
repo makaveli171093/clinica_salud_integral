@@ -9,10 +9,9 @@ import { AuthController } from "./auth/auth.controller.js";
 import { AuthService } from "./auth/auth.service.js";
 import { AuthGuard } from "./auth/auth.guard.js";
 import { RolesGuard } from "./auth/roles.guard.js";
-import { UsersController } from "./users/users.controller.js";
-import { UsersService } from "./users/users.service.js";
 import { AppConfigModule } from "./config/config.module.js";
 import { PrismaModule } from "./database/prisma.module.js";
+import { UsersModule } from "./users/users.module.js";
 
 @Module({})
 export class AppModule {
@@ -22,6 +21,7 @@ export class AppModule {
       imports: [
         AppConfigModule.register(config),
         PrismaModule,
+        UsersModule,
         JwtModule.register({
           secret: config.JWT_SECRET,
           signOptions: {
@@ -38,11 +38,10 @@ export class AppModule {
         }),
         ThrottlerModule.forRoot([{ name: "default", ttl: 60000, limit: 120 }]),
       ],
-      controllers: [AuthController, UsersController],
+      controllers: [AuthController],
       providers: [
         { provide: UserStore, useClass: PrismaUserStore },
         AuthService,
-        UsersService,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
