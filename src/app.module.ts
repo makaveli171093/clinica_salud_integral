@@ -2,7 +2,7 @@ import { type DynamicModule, Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
-import { ENVIRONMENT, type Environment } from "./config/env.validation.js";
+import { type Environment } from "./config/env.validation.js";
 import { UserStore } from "./database/user-store.js";
 import { PrismaUserStore } from "./database/prisma-user.store.js";
 import { AuthController } from "./auth/auth.controller.js";
@@ -12,6 +12,7 @@ import { RolesGuard } from "./auth/roles.guard.js";
 import { UsersController } from "./users/users.controller.js";
 import { UsersService } from "./users/users.service.js";
 import { AppConfigModule } from "./config/config.module.js";
+import { PrismaModule } from "./database/prisma.module.js";
 
 @Module({})
 export class AppModule {
@@ -20,6 +21,7 @@ export class AppModule {
       module: AppModule,
       imports: [
         AppConfigModule.register(config),
+        PrismaModule,
         JwtModule.register({
           secret: config.JWT_SECRET,
           signOptions: {
