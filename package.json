@@ -1,16 +1,23 @@
 {
   "name": "PROYECTO_CLINICA_SALUD_INTEGRAL",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.2.0",
+  "description": "Migraci\u00f3n incremental a NestJS: bloque 1 de autenticaci\u00f3n y usuarios",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "swagger": "tsx swagger.ts",
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "generate": "prisma generate --config prisma.config.ts",
+    "build": "pnpm generate && tsc -p tsconfig.json",
+    "dev": "pnpm build && node --watch dist/nest/main.js",
+    "start": "node dist/nest/main.js",
+    "check": "pnpm generate && tsc --noEmit -p tsconfig.json",
+    "check:legacy": "pnpm generate && tsc --noEmit -p tsconfig.legacy.json",
+    "dev:legacy": "tsx watch src/server.ts",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "admin:create": "node --import tsx scripts/create-admin.ts",
+    "seed": "node --import tsx prisma/seed.ts",
+    "db:deploy": "prisma migrate deploy --config prisma.config.ts",
+    "swagger:legacy": "tsx swagger.ts",
+    "test:db": "node --test test/prisma.integration.mjs",
+    "watch:types": "tsc -p tsconfig.json --watch"
   },
   "keywords": [],
   "author": "",
@@ -25,17 +32,31 @@
   "packageManager": "pnpm@11.25.0",
   "type": "module",
   "dependencies": {
+    "@fastify/helmet": "^13.1.2",
+    "@fastify/static": "^10.1.6",
+    "@nestjs/common": "^11.2.7",
+    "@nestjs/core": "^11.2.7",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/platform-fastify": "^11.2.7",
+    "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.7.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "fastify": "^5.11.3",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@nestjs/testing": "^11.2.7",
     "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -46,5 +67,9 @@
     "swagger-autogen": "^2.23.7",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

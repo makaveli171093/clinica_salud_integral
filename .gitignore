@@ -3,3 +3,7 @@ dist/
 generated/
 .env
 /src/generated/prisma
+
+.env.*
+!.env.example
+coverage/
