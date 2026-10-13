@@ -3,15 +3,12 @@ import { APP_GUARD } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { type Environment } from "./config/env.validation.js";
-import { UserStore } from "./database/user-store.js";
-import { PrismaUserStore } from "./database/prisma-user.store.js";
-import { AuthController } from "./auth/auth.controller.js";
-import { AuthService } from "./auth/auth.service.js";
 import { AuthGuard } from "./auth/auth.guard.js";
 import { RolesGuard } from "./auth/roles.guard.js";
 import { AppConfigModule } from "./config/config.module.js";
 import { PrismaModule } from "./database/prisma.module.js";
 import { UsersModule } from "./users/users.module.js";
+import { AuthModule } from "./auth/auth.module.js";
 
 @Module({})
 export class AppModule {
@@ -23,6 +20,7 @@ export class AppModule {
         PrismaModule,
         UsersModule,
         JwtModule.register({
+          global: true,
           secret: config.JWT_SECRET,
           signOptions: {
             algorithm: "HS256",
@@ -36,12 +34,11 @@ export class AppModule {
             audience: "clinica-api",
           },
         }),
+        AuthModule,
         ThrottlerModule.forRoot([{ name: "default", ttl: 60000, limit: 120 }]),
       ],
-      controllers: [AuthController],
+      controllers: [],
       providers: [
-        { provide: UserStore, useClass: PrismaUserStore },
-        AuthService,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
