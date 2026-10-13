@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
-import { ENVIRONMENT, type Environment } from "../config.js";
+import { ENVIRONMENT, type Environment } from "../config/env.validation.js";
 import { UserStore, type StoredUser } from "./user-store.js";
 
 @Injectable()
