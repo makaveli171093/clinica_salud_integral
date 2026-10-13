@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "API de la Clinica Salud Integral",
   "scripts": {
-    "generate": "prisma generate --config prisma.config.ts",
+    "generate": "prisma generate --no-hints --config prisma.config.ts",
     "build": "pnpm generate && tsc -p tsconfig.json",
     "dev": "pnpm build && node --watch dist/main.js",
     "start": "node dist/main.js",
