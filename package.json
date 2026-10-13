@@ -5,8 +5,8 @@
   "scripts": {
     "generate": "prisma generate --config prisma.config.ts",
     "build": "pnpm generate && tsc -p tsconfig.json",
-    "dev": "pnpm build && node --watch dist/nest/main.js",
-    "start": "node dist/nest/main.js",
+    "dev": "pnpm build && node --watch dist/main.js",
+    "start": "node dist/main.js",
     "check": "pnpm generate && tsc --noEmit -p tsconfig.json",
     "test": "pnpm build && node --test test/*.test.mjs",
     "admin:create": "node --import tsx scripts/create-admin.ts",
