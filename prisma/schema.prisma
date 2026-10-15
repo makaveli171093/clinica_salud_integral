@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -17,9 +16,12 @@ enum Role {
 
 enum AppointmentStatus {
   PROGRAMADA
-  COMPLETADA
+  CONFIRMADA
+  EN_ESPERA
+  EN_ATENCION
+  ATENDIDA
   CANCELADA
-  ATENDIDO
+  NO_ASISTIO
 }
 
 enum Gender {
@@ -34,32 +36,44 @@ enum TargetGender {
   FEMENINO
 }
 
-model User {
-  tokenVersion Int @default(0) @map("token_version")
-  id        Int      @id @default(autoincrement())
-  email     String   @unique @db.VarChar(150)
-  password  String   @db.VarChar(255)
-  role      Role
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum DayOfWeek {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
 
-  doctor    Doctor?
+model User {
+  tokenVersion Int      @default(0) @map("token_version")
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(150)
+  password     String   @db.VarChar(255)
+  role         Role
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  doctor Doctor?
 
   @@map("users")
 }
 
 model Specialty {
-  id            Int          @id @default(autoincrement())
-  name          String       @unique @db.VarChar(100)
-  allowedGender TargetGender @default(TODOS) @map("allowed_gender")
-  minAge        Int?         @map("min_age")
-  maxAge        Int?         @map("max_age")
-  isActive      Boolean      @default(true) @map("is_active")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id               Int          @id @default(autoincrement())
+  name             String       @unique @db.VarChar(100)
+  durationMinutes  Int          @default(30) @map("duration_minutes")
+  requiresReferral Boolean      @default(false) @map("requires_referral")
+  allowedGender    TargetGender @default(TODOS) @map("allowed_gender")
+  minAge           Int?         @map("min_age")
+  maxAge           Int?         @map("max_age")
+  isActive         Boolean      @default(true) @map("is_active")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  doctors       Doctor[]
+  doctors Doctor[]
 
   @@map("specialties")
 }
@@ -74,12 +88,31 @@ model Doctor {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  specialty    Specialty     @relation(fields: [specialtyId], references: [id])
-  user         User?         @relation(fields: [userId], references: [id])
-  appointments Appointment[]
+  specialty            Specialty             @relation(fields: [specialtyId], references: [id])
+  user                 User?                 @relation(fields: [userId], references: [id])
+  appointments         Appointment[]
   medicalConsultations MedicalConsultation[]
+  schedules            DoctorSchedule[]
 
   @@map("doctors")
+}
+
+model DoctorSchedule {
+  id               Int       @id @default(autoincrement())
+  doctorId         Int       @map("doctor_id")
+  consultingRoomId Int       @map("consulting_room_id")
+  dayOfWeek        DayOfWeek @map("day_of_week")
+  startTime        String    @map("start_time") @db.VarChar(5) // formato "HH:mm", ej. "08:00"
+  endTime          String    @map("end_time") @db.VarChar(5) // formato "HH:mm", ej. "12:00"
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  doctor         Doctor         @relation(fields: [doctorId], references: [id])
+  consultingRoom ConsultingRoom @relation(fields: [consultingRoomId], references: [id])
+
+  @@unique([doctorId, dayOfWeek, startTime])
+  @@map("doctor_schedules")
 }
 
 model Patient {
@@ -94,63 +127,101 @@ model Patient {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  appointments Appointment[]
+  appointments  Appointment[]
   medicalRecord MedicalRecord?
 
   @@map("patients")
 }
 
 model Appointment {
-  id          Int               @id @default(autoincrement())
-  patientId   Int               @map("patient_id")
-  doctorId    Int               @map("doctor_id")
-  scheduledAt DateTime          @map("scheduled_at")
-  reason      String?           @db.Text
-  status      AppointmentStatus @default(PROGRAMADA)
-  isActive    Boolean           @default(true) @map("is_active")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  id                Int               @id @default(autoincrement())
+  patientId         Int               @map("patient_id")
+  doctorId          Int               @map("doctor_id")
+  consultingRoomId  Int               @map("consulting_room_id")
+  startTime         DateTime          @map("start_time")
+  endTime           DateTime          @map("end_time")
+  reason            String?           @db.Text
+  status            AppointmentStatus @default(PROGRAMADA)
+  isOverbooking     Boolean           @default(false) @map("is_overbooking")
+  overbookingReason String?           @map("overbooking_reason") @db.Text
+  isActive          Boolean           @default(true) @map("is_active")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  patient     Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor      Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor              Doctor               @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  consultingRoom      ConsultingRoom       @relation(fields: [consultingRoomId], references: [id], onDelete: Restrict)
   medicalConsultation MedicalConsultation?
 
+  @@index([doctorId, startTime, endTime])
+  @@index([consultingRoomId, startTime, endTime])
+  @@index([patientId, startTime])
   @@map("appointments")
 }
 
 model MedicalRecord {
-  id              Int      @id @default(autoincrement())
-  patientId       Int      @unique @map("patient_id")
-  bloodType       String?  @map("blood_type") @db.VarChar(10)      // ej. O+, A+
-  allergies       String?  @db.Text                                // Alergias conocidas
-  emergencyContact String? @map("emergency_contact") @db.VarChar(150)
-  emergencyPhone  String?  @map("emergency_phone") @db.VarChar(20)
-  notes           String?  @db.Text                                // Notas administrativas de portada
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  patientId        Int      @unique @map("patient_id")
+  bloodType        String?  @map("blood_type") @db.VarChar(10) // ej. O+, A+
+  allergies        String?  @db.Text // Alergias conocidas
+  emergencyContact String?  @map("emergency_contact") @db.VarChar(150)
+  emergencyPhone   String?  @map("emergency_phone") @db.VarChar(20)
+  notes            String?  @db.Text // Notas administrativas de portada
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  patient         Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  consultations   MedicalConsultation[]
+  patient       Patient               @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  consultations MedicalConsultation[]
 
   @@map("medical_records")
 }
 
 model MedicalConsultation {
-  id              Int      @id @default(autoincrement())
-  medicalRecordId Int      @map("medical_record_id")
-  doctorId        Int      @map("doctor_id")
-  appointmentId   Int?     @unique @map("appointment_id") // Opcional: si proviene de una cita
-  symptoms        String   @db.Text                       // Sintomatología
-  diagnosis       String   @db.Text                       // Diagnóstico
-  studiesRequested String? @map("studies_requested") @db.Text // Estudios solicitados / laboratorio
-  prescription    String?  @db.Text                       // Receta médica / indicaciones
+  id               Int      @id @default(autoincrement())
+  medicalRecordId  Int      @map("medical_record_id")
+  doctorId         Int      @map("doctor_id")
+  appointmentId    Int?     @unique @map("appointment_id") // Opcional: si proviene de una cita
+  symptoms         String   @db.Text // Sintomatología
+  diagnosis        String   @db.Text // Diagnóstico
+  studiesRequested String?  @map("studies_requested") @db.Text // Estudios solicitados / laboratorio
+  prescription     String?  @db.Text // Receta médica / indicaciones
   consultationDate DateTime @default(now()) @map("consultation_date")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
-  doctor          Doctor        @relation(fields: [doctorId], references: [id])
-  appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Restrict)
+  doctor        Doctor        @relation(fields: [doctorId], references: [id])
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
 
   @@map("medical_consultations")
+}
+
+model Branch {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  address   String   @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  consultingRooms ConsultingRoom[]
+
+  @@map("branches")
+}
+
+model ConsultingRoom {
+  id        Int      @id @default(autoincrement())
+  branchId  Int      @map("branch_id")
+  name      String   @db.VarChar(50) // ej. "Consultorio 101", "Sala Dental A"
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  branch       Branch           @relation(fields: [branchId], references: [id])
+  schedules    DoctorSchedule[]
+  appointments Appointment[]
+
+  @@unique([branchId, name])
+  @@map("consulting_rooms")
 }
