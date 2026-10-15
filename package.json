@@ -11,7 +11,11 @@
     "test": "pnpm build && node --test test/*.test.mjs",
     "admin:create": "node --import tsx scripts/create-admin.ts",
     "db:deploy": "prisma migrate deploy --config prisma.config.ts",
-    "test:db": "node --test test/prisma.integration.mjs"
+    "test:db": "node --test test/prisma.integration.mjs",
+    "db:seed": "node --import tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "node --import tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
