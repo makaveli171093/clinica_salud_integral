@@ -11,6 +11,7 @@ import { UsersModule } from "./users/users.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { SpecialtiesModule } from "./specialties/specialties.module.js";
 import { BranchesModule } from "./branches/branches.module.js";
+import { ConsultingRoomsModule } from "./consulting-rooms/consulting-rooms.module.js";
 
 @Module({})
 export class AppModule {
@@ -39,6 +40,8 @@ export class AppModule {
         AuthModule,
         SpecialtiesModule,
         BranchesModule,
+        BranchesModule,
+        ConsultingRoomsModule,
         ThrottlerModule.forRoot([{ name: "default", ttl: 60000, limit: 120 }]),
       ],
       controllers: [],
