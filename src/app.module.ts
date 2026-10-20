@@ -13,6 +13,7 @@ import { SpecialtiesModule } from "./specialties/specialties.module.js";
 import { BranchesModule } from "./branches/branches.module.js";
 import { ConsultingRoomsModule } from "./consulting-rooms/consulting-rooms.module.js";
 import { DoctorsModule } from "./doctors/doctors.module.js";
+import { DoctorSchedulesModule } from "./doctor-schedules/doctor-schedules.module.js";
 
 @Module({})
 export class AppModule {
@@ -44,6 +45,7 @@ export class AppModule {
         BranchesModule,
         ConsultingRoomsModule,
         DoctorsModule,
+        DoctorSchedulesModule,
         ThrottlerModule.forRoot([{ name: "default", ttl: 60000, limit: 120 }]),
       ],
       controllers: [],
