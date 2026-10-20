@@ -3,44 +3,69 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaUserStore } from "../dist/database/prisma-user.store.js";
-import { PrismaClient } from "../dist/generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaService } from "../dist/database/prisma.service.js";
 
 const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("_test"))
+
+if (!url || !new URL(url).pathname.endsWith("_test")) {
   throw new Error(
     "TEST_DATABASE_URL debe identificar una base aislada terminada en _test",
   );
-test("PostgreSQL: user creation, uniqueness, session revocation and lifecycle", async () => {
-  const store = new PrismaUserStore({ DATABASE_URL: url });
-  const cleanup = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: url }),
-  });
+}
+
+test("PostgreSQL: creación, unicidad y revocación de usuarios", async () => {
+  const prisma = new PrismaService({ DATABASE_URL: url });
+  const store = new PrismaUserStore(prisma);
   const email = `integration-${randomUUID()}@clinic.test`;
-  await store.onModuleInit();
+
+  let connected = false;
+
   try {
-    const u = await store.create({
+    await prisma.$connect();
+    connected = true;
+
+    const user = await store.create({
       email,
-      password: "not-an-authentication-test",
+      password: "valor-sintetico-no-es-una-prueba-de-login",
       role: "MEDICO",
     });
-    assert.equal(u.tokenVersion, 0);
-    assert.equal(u.isActive, true);
-    assert.equal((await store.findByEmail(email)).id, u.id);
+
+    assert.equal(user.tokenVersion, 0);
+    assert.equal(user.isActive, true);
+
+    const found = await store.findByEmail(email);
+    assert.equal(found.id, user.id);
+
     await assert.rejects(
-      store.create({ email, password: "duplicate", role: "MEDICO" }),
-      (e) => e.code === "P2002",
+      store.create({
+        email,
+        password: "duplicado",
+        role: "MEDICO",
+      }),
+      (error) => error.code === "P2002",
     );
-    await store.setActive(u.id, false);
-    const disabled = await store.findById(u.id);
+
+    await store.setActive(user.id, false);
+
+    const disabled = await store.findById(user.id);
     assert.equal(disabled.isActive, false);
     assert.equal(disabled.tokenVersion, 1);
-    await store.setActive(u.id, true);
-    await store.revokeSessions(u.id);
-    assert.equal((await store.findById(u.id)).tokenVersion, 3);
+
+    await store.setActive(user.id, true);
+    await store.revokeSessions(user.id);
+
+    const reactivated = await store.findById(user.id);
+    assert.equal(reactivated.isActive, true);
+    assert.equal(reactivated.tokenVersion, 3);
   } finally {
-    await cleanup.user.deleteMany({ where: { email } });
-    await cleanup.$disconnect();
-    await store.onModuleDestroy();
+    try {
+      if (connected) {
+        await prisma.user.deleteMany({
+          where: { email },
+        });
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
   }
 });
