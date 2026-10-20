@@ -211,12 +211,13 @@ model Branch {
 }
 
 model ConsultingRoom {
-  id        Int      @id @default(autoincrement())
-  branchId  Int      @map("branch_id")
-  name      String   @db.VarChar(50) // ej. "Consultorio 101", "Sala Dental A"
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 Int      @id @default(autoincrement())
+  branchId           Int      @map("branch_id")
+  name               String   @db.VarChar(50) // ej. "Consultorio 101", "Sala Dental A"
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  preparationMinutes Int?     @map("preparation_minutes")
 
   branch       Branch           @relation(fields: [branchId], references: [id])
   schedules    DoctorSchedule[]

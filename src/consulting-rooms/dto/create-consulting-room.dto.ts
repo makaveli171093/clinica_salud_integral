@@ -30,4 +30,14 @@ export class CreateConsultingRoomDto {
   @IsNotEmpty()
   @MaxLength(50)
   name!: string;
+
+  @ApiProperty({
+    example: 5,
+    minimum: 0,
+    description: "Minutos de preparación después de cada atención",
+  })
+  @IsInt()
+  @Min(0)
+  @Max(2147483647)
+  preparationMinutes!: number;
 }

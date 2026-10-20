@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateConsultingRoomDto } from "./dto/create-consulting-room.dto.js";
+import type { SetRoomPreparationDto } from "./dto/set-room-preparation.dto.js";
 
 @Injectable()
 export class ConsultingRoomsService {
@@ -30,6 +31,7 @@ export class ConsultingRoomsService {
         data: {
           branchId: branch.id,
           name: dto.name,
+          preparationMinutes: dto.preparationMinutes,
         },
         select: {
           id: true,
@@ -97,5 +99,42 @@ export class ConsultingRoomsService {
     }
 
     return consultingRoom;
+  }
+
+  async setPreparation(id: number, dto: SetRoomPreparationDto) {
+    try {
+      return await this.prisma.consultingRoom.update({
+        where: {
+          id,
+          isActive: true,
+          branch: {
+            isActive: true,
+          },
+        },
+        data: {
+          preparationMinutes: dto.preparationMinutes,
+        },
+        select: {
+          id: true,
+          branchId: true,
+          name: true,
+          isActive: true,
+          preparationMinutes: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "P2025"
+      ) {
+        throw new NotFoundException(
+          "El consultorio no existe o no está disponible",
+        );
+      }
+
+      throw error;
+    }
   }
 }

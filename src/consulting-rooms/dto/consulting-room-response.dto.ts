@@ -12,4 +12,11 @@ export class ConsultingRoomResponseDto {
 
   @ApiProperty({ example: true })
   isActive!: boolean;
+
+  @ApiProperty({
+    type: Number,
+    example: 5,
+    nullable: true,
+  })
+  preparationMinutes!: number | null;
 }

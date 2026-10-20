@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -10,6 +10,7 @@ import { PositiveIdPipe } from "../common/positive-id.pipe.js";
 import { ConsultingRoomsService } from "./consulting-rooms.service.js";
 import { CreateConsultingRoomDto } from "./dto/create-consulting-room.dto.js";
 import { ConsultingRoomResponseDto } from "./dto/consulting-room-response.dto.js";
+import { SetRoomPreparationDto } from "./dto/set-room-preparation.dto.js";
 
 @ApiTags("Consultorios")
 @ApiBearerAuth()
@@ -34,5 +35,15 @@ export class ConsultingRoomsController {
   @ApiOkResponse({ type: ConsultingRoomResponseDto })
   findById(@Param("id", PositiveIdPipe) id: number) {
     return this.consultingRooms.findById(id);
+  }
+
+  @Patch(":id/preparation")
+  @Roles("ADMINISTRADOR")
+  @ApiOkResponse({ type: ConsultingRoomResponseDto })
+  setPreparation(
+    @Param("id", PositiveIdPipe) id: number,
+    @Body() dto: SetRoomPreparationDto,
+  ) {
+    return this.consultingRooms.setPreparation(id, dto);
   }
 }
