@@ -14,6 +14,8 @@ import { CreateDoctorScheduleDto } from "./dto/create-doctor-schedule.dto.js";
 import { DoctorScheduleResponseDto } from "./dto/doctor-schedule-response.dto.js";
 import { QueryDoctorSchedulesDto } from "./dto/query-doctor-schedules.dto.js";
 import { PaginatedDoctorSchedulesResponseDto } from "./dto/paginated-doctor-schedules-response.dto.js";
+import { QueryAvailabilityDto } from "./dto/query-availability.dto.js";
+import { PotentialSlotsResponseDto } from "./dto/potential-slots-response.dto.js";
 
 @ApiTags("Horarios médicos")
 @ApiBearerAuth()
@@ -31,6 +33,38 @@ export class DoctorSchedulesController {
   })
   findAll(@Query() query: QueryDoctorSchedulesDto) {
     return this.schedules.findAllActive(query);
+  }
+
+  @Get("potential-slots")
+  @ApiOkResponse({
+    description:
+      "Espacios calculados según horarios y duraciones, sin descontar citas existentes",
+    type: PotentialSlotsResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: "Parámetros o configuración de tiempos inválidos",
+  })
+  @ApiNotFoundResponse({
+    description: "Médico o especialidad no disponibles",
+  })
+  findPotentialSlots(@Query() query: QueryAvailabilityDto) {
+    return this.schedules.findPotentialSlots(query);
+  }
+
+  @Get("availability")
+  @ApiOkResponse({
+    description:
+      "Espacios disponibles después de descontar citas y preparación del consultorio",
+    type: PotentialSlotsResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: "Parámetros o configuración de tiempos inválidos",
+  })
+  @ApiNotFoundResponse({
+    description: "Médico o especialidad no disponibles",
+  })
+  findAvailableSlots(@Query() query: QueryAvailabilityDto) {
+    return this.schedules.findAvailableSlots(query);
   }
 
   @Post()
