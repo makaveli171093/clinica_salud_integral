@@ -6,6 +6,8 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../database/prisma.service.js";
 import type { CreateDoctorScheduleDto } from "./dto/create-doctor-schedule.dto.js";
+import type { Prisma } from "../generated/prisma/client.js";
+import type { QueryDoctorSchedulesDto } from "./dto/query-doctor-schedules.dto.js";
 
 function toMinutes(time: string): number {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
@@ -63,6 +65,76 @@ export class DoctorSchedulesService {
     }
 
     throw new ConflictException("No se pudo registrar el horario");
+  }
+
+  async findAllActive(query: QueryDoctorSchedulesDto) {
+    const where: Prisma.DoctorScheduleWhereInput = {
+      isActive: true,
+
+      doctor: {
+        isActive: true,
+        specialty: {
+          isActive: true,
+        },
+      },
+
+      consultingRoom: {
+        isActive: true,
+        branch: {
+          isActive: true,
+        },
+      },
+
+      ...(query.doctorId !== undefined ? { doctorId: query.doctorId } : {}),
+
+      ...(query.consultingRoomId !== undefined
+        ? { consultingRoomId: query.consultingRoomId }
+        : {}),
+
+      ...(query.dayOfWeek !== undefined ? { dayOfWeek: query.dayOfWeek } : {}),
+    };
+
+    const skip = (query.page - 1) * query.limit;
+
+    const [data, total] = await this.prisma.$transaction(
+      [
+        this.prisma.doctorSchedule.findMany({
+          where,
+          select: {
+            id: true,
+            doctorId: true,
+            consultingRoomId: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+            isActive: true,
+          },
+          orderBy: [
+            { doctorId: "asc" },
+            { dayOfWeek: "asc" },
+            { startTime: "asc" },
+            { id: "asc" },
+          ],
+          skip,
+          take: query.limit,
+        }),
+
+        this.prisma.doctorSchedule.count({
+          where,
+        }),
+      ],
+      {
+        isolationLevel: "RepeatableRead",
+      },
+    );
+
+    return {
+      data,
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
+    };
   }
 
   private async createOnce(dto: CreateDoctorScheduleDto, blockMinutes: number) {

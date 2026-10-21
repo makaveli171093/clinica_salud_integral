@@ -198,3 +198,148 @@ test("concurrencia: un consultorio no recibe dos médicos a la vez", async () =>
     assert.equal(await countSchedules(fixture), 1);
   });
 });
+
+test("consulta: combina médico, consultorio y día", async () => {
+  await withFixture(async (fixture) => {
+    const [doctorA, doctorB] = fixture.doctors;
+    const [roomA, roomB] = fixture.rooms;
+
+    const expected = await serviceA.create(
+      schedule(doctorA.id, roomA.id, "08:00", "09:00"),
+    );
+
+    await serviceA.create(schedule(doctorA.id, roomB.id, "09:00", "10:00"));
+
+    await serviceA.create(schedule(doctorB.id, roomA.id, "09:00", "10:00"));
+
+    await serviceA.create({
+      ...schedule(doctorA.id, roomA.id, "08:00", "09:00"),
+      dayOfWeek: "MARTES",
+    });
+
+    const result = await serviceA.findAllActive({
+      doctorId: doctorA.id,
+      consultingRoomId: roomA.id,
+      dayOfWeek: "LUNES",
+      page: 1,
+      limit: 10,
+    });
+
+    assert.deepEqual(
+      result.data.map((item) => item.id),
+      [expected.id],
+    );
+    assert.equal(result.total, 1);
+    assert.equal(result.totalPages, 1);
+  });
+});
+
+test("consulta: pagina en orden y conserva el total en páginas vacías", async () => {
+  await withFixture(async (fixture) => {
+    const doctor = fixture.doctors[0];
+    const room = fixture.rooms[0];
+
+    for (const [start, end] of [
+      ["10:00", "11:00"],
+      ["08:00", "09:00"],
+      ["09:00", "10:00"],
+    ]) {
+      await serviceA.create(schedule(doctor.id, room.id, start, end));
+    }
+
+    const query = {
+      doctorId: doctor.id,
+      dayOfWeek: "LUNES",
+      limit: 2,
+    };
+
+    const first = await serviceA.findAllActive({
+      ...query,
+      page: 1,
+    });
+
+    assert.deepEqual(
+      first.data.map((item) => item.startTime),
+      ["08:00", "09:00"],
+    );
+    assert.equal(first.total, 3);
+    assert.equal(first.page, 1);
+    assert.equal(first.limit, 2);
+    assert.equal(first.totalPages, 2);
+
+    const second = await serviceA.findAllActive({
+      ...query,
+      page: 2,
+    });
+
+    assert.deepEqual(
+      second.data.map((item) => item.startTime),
+      ["10:00"],
+    );
+    assert.equal(second.total, 3);
+    assert.equal(second.totalPages, 2);
+
+    const outside = await serviceA.findAllActive({
+      ...query,
+      page: 3,
+    });
+
+    assert.deepEqual(outside.data, []);
+    assert.equal(outside.total, 3);
+    assert.equal(outside.page, 3);
+    assert.equal(outside.totalPages, 2);
+  });
+});
+
+test("consulta: excluye horarios cuando alguna entidad está inactiva", async () => {
+  await withFixture(async (fixture) => {
+    const doctor = fixture.doctors[0];
+    const room = fixture.rooms[0];
+
+    const created = await serviceA.create(
+      schedule(doctor.id, room.id, "08:00", "09:00"),
+    );
+
+    const query = {
+      doctorId: doctor.id,
+      page: 1,
+      limit: 10,
+    };
+
+    const targets = [
+      [dbA.doctorSchedule, created.id],
+      [dbA.doctor, doctor.id],
+      [dbA.specialty, fixture.specialty.id],
+      [dbA.consultingRoom, room.id],
+      [dbA.branch, fixture.branch.id],
+    ];
+
+    for (const [model, id] of targets) {
+      await model.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
+      try {
+        const result = await serviceA.findAllActive(query);
+
+        assert.deepEqual(result.data, []);
+        assert.equal(result.total, 0);
+        assert.equal(result.totalPages, 0);
+      } finally {
+        await model.update({
+          where: { id },
+          data: { isActive: true },
+        });
+      }
+
+      const restored = await serviceA.findAllActive(query);
+
+      assert.deepEqual(
+        restored.data.map((item) => item.id),
+        [created.id],
+      );
+      assert.equal(restored.total, 1);
+    }
+  });
+});
